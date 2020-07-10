@@ -55,7 +55,12 @@ namespace MemberAccess
 
                 var generatedSource = generate(s, list, generatesIndex, generatesName);
 
-                context.AddSource($"{s.Name}_memberaccess.cs", SourceText.From(generatedSource, Encoding.UTF8));
+                var filename = $"{s.Name}_memberaccess.cs";
+                if (!string.IsNullOrEmpty(s.ContainingNamespace.Name))
+                {
+                    filename = s.ContainingNamespace.Name.Replace('.', '/') + filename;
+                }
+                context.AddSource(filename, SourceText.From(generatedSource, Encoding.UTF8));
             }
 
             string generate(INamedTypeSymbol type, ParameterListSyntax list, bool generatesIndex, bool generatesName)

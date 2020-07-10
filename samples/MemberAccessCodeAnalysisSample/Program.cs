@@ -20,6 +20,9 @@ namespace Sample
 {
     [ByIndexAttribute, ByNameAttribute]
     partial record Point3(int X, int Y);
+
+    [ByIndexAttribute]
+    partial record Point1(int X, int Y);
 }
 
 namespace System.Runtime.CompilerServices
