@@ -54,13 +54,27 @@ namespace MemberAccess
                 if (model.GetDeclaredSymbol(r) is not { } s) continue;
 
                 var generatedSource = generate(s, list, generatesIndex, generatesName);
-
-                var filename = $"{s.Name}_memberaccess.cs";
-                if (!string.IsNullOrEmpty(s.ContainingNamespace.Name))
-                {
-                    filename = s.ContainingNamespace.Name.Replace('.', '/') + filename;
-                }
+                var filename = getFilename(s);
                 context.AddSource(filename, SourceText.From(generatedSource, Encoding.UTF8));
+            }
+
+            string getFilename(INamedTypeSymbol type)
+            {
+                buffer.Clear();
+
+                if (!string.IsNullOrEmpty(type.ContainingNamespace.Name))
+                {
+                    foreach (var c in type.ContainingNamespace.Name)
+                    {
+                        if (c == '.') buffer.Append('_');
+                        else buffer.Append(c);
+                    }
+                    buffer.Append('_');
+                }
+                buffer.Append(type.Name);
+                buffer.Append("_memberaccess.cs");
+
+                return buffer.ToString();
             }
 
             string generate(INamedTypeSymbol type, ParameterListSyntax list, bool generatesIndex, bool generatesName)
