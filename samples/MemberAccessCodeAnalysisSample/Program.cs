@@ -52,9 +52,9 @@ namespace System.Runtime.CompilerServices
             syntaxTrees: new[] { SyntaxFactory.ParseSyntaxTree(source, opt) },
             references: new[]
             {
-                    AssemblyMetadata.CreateFromFile(typeof(object).Assembly.Location).GetReference(),
-                    MetadataReference.CreateFromFile(Path.Combine(dotnetCoreDirectory, "netstandard.dll")),
-                    MetadataReference.CreateFromFile(Path.Combine(dotnetCoreDirectory, "System.Runtime.dll")),
+                AssemblyMetadata.CreateFromFile(typeof(object).Assembly.Location).GetReference(),
+                MetadataReference.CreateFromFile(Path.Combine(dotnetCoreDirectory, "netstandard.dll")),
+                MetadataReference.CreateFromFile(Path.Combine(dotnetCoreDirectory, "System.Runtime.dll")),
             },
             options: copt);
 
