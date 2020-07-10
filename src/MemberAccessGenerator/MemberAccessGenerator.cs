@@ -16,19 +16,28 @@ namespace MemberAccess
 {
     [System.Diagnostics.Conditional(""COMPILE_TIME_ONLY"")]
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-    sealed class ByIndexAttribute : Attribute
-    {
-        public ByIndexAttribute() { }
-    }
+    sealed class ByIndexAttribute : Attribute { }
 
     [System.Diagnostics.Conditional(""COMPILE_TIME_ONLY"")]
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-    sealed class ByNameAttribute : Attribute
-    {
-        public ByNameAttribute() { }
-    }
+    sealed class ByNameAttribute : Attribute { }
+
+    [System.Diagnostics.Conditional(""COMPILE_TIME_ONLY"")]
+    [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
+    sealed class EnumerateAttribute : Attribute { }
 }
 ";
+
+        [Flags]
+        private enum Flag
+        {
+            None = 0,
+            ByIndex = 1,
+            ByName = 2,
+            Enumerate = 4,
+            All = ByIndex | ByName | Enumerate,
+        }
+
         public void Execute(SourceGeneratorContext context)
         {
             context.AddSource("MemberAccessAttributes", SourceText.From(attributeText, Encoding.UTF8));
@@ -41,6 +50,7 @@ namespace MemberAccess
 
             if (!(compilation.GetTypeByMetadataName("MemberAccess.ByIndexAttribute") is { } indexAttributeSymbol)) return;
             if (!(compilation.GetTypeByMetadataName("MemberAccess.ByNameAttribute") is { } nameAttributeSymbol)) return;
+            if (!(compilation.GetTypeByMetadataName("MemberAccess.EnumerateAttribute") is { } enumerateAttributeSymbol)) return;
 
             var buffer = new StringBuilder();
 
@@ -48,12 +58,12 @@ namespace MemberAccess
             {
                 SemanticModel model = compilation.GetSemanticModel(r.SyntaxTree);
 
-                var (generatesIndex, generatesName) = getMemberAccessAttribute(model, r);
-                if (!generatesIndex && !generatesName) continue;
+                var flag = getMemberAccessAttribute(model, r);
+                if (flag == Flag.None) continue;
                 if (r.ParameterList is not { } list) continue;
                 if (model.GetDeclaredSymbol(r) is not { } s) continue;
 
-                var generatedSource = generate(s, list, generatesIndex, generatesName);
+                var generatedSource = generate(s, list, flag);
                 var filename = getFilename(s);
                 context.AddSource(filename, SourceText.From(generatedSource, Encoding.UTF8));
             }
@@ -76,7 +86,7 @@ namespace MemberAccess
                 return buffer.ToString();
             }
 
-            string generate(INamedTypeSymbol type, ParameterListSyntax list, bool generatesIndex, bool generatesName)
+            string generate(INamedTypeSymbol type, ParameterListSyntax list, Flag flag)
             {
                 buffer.Clear();
 
@@ -92,7 +102,7 @@ namespace MemberAccess
                 buffer.Append(@"
 {");
 
-                if (generatesIndex)
+                if ((flag & Flag.ByIndex) != 0)
                 {
                     buffer.Append(@"
     public object GetMember(int index) => index switch
@@ -115,7 +125,7 @@ namespace MemberAccess
 ");
                 }
 
-                if (generatesName)
+                if ((flag & Flag.ByName) != 0)
                 {
                     buffer.Append(@"
     public object GetMember(string name) => name switch
@@ -136,6 +146,26 @@ namespace MemberAccess
 ");
                 }
 
+                if ((flag & Flag.Enumerate) != 0)
+                {
+                    buffer.Append(@"
+    public System.Collections.Generic.IEnumerable<(string name, object value)> EnumerateMembers()
+    {
+");
+                    foreach (var p in list.Parameters)
+                    {
+                        buffer.Append("        yield return (nameof(");
+                        buffer.Append(p.Identifier.Text);
+                        buffer.Append("), (object)");
+                        buffer.Append(p.Identifier.Text);
+                        buffer.Append(@");
+");
+                    }
+
+                    buffer.Append(@"    }
+");
+                }
+
                 buffer.Append(@"}
 ");
                 if (!string.IsNullOrEmpty(type.ContainingNamespace.Name))
@@ -147,20 +177,20 @@ namespace MemberAccess
                 return buffer.ToString();
             }
 
-            (bool generatesIndex, bool generatesName) getMemberAccessAttribute(SemanticModel model, RecordDeclarationSyntax m)
+            Flag getMemberAccessAttribute(SemanticModel model, RecordDeclarationSyntax m)
             {
                 if (!(model.GetDeclaredSymbol(m) is { } s)) return default;
 
-                var i = false;
-                var n = false;
+                Flag flag = default;
                 foreach (var a in s.GetAttributes())
                 {
-                    if (SymbolEqualityComparer.Default.Equals(a.AttributeClass, indexAttributeSymbol)) i = true;
-                    if (SymbolEqualityComparer.Default.Equals(a.AttributeClass, nameAttributeSymbol)) n = true;
-                    if (i && n) break;
+                    if (SymbolEqualityComparer.Default.Equals(a.AttributeClass, indexAttributeSymbol)) flag |= Flag.ByIndex;
+                    if (SymbolEqualityComparer.Default.Equals(a.AttributeClass, nameAttributeSymbol)) flag |= Flag.ByName;
+                    if (SymbolEqualityComparer.Default.Equals(a.AttributeClass, enumerateAttributeSymbol)) flag |= Flag.Enumerate;
+                    if (flag == Flag.All) break;
                 }
 
-                return (i, n);
+                return flag;
             }
         }
 

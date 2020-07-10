@@ -10,16 +10,22 @@ class Program
     {
         var source = @"using MemberAccess;
 
+[ByIndexAttribute, ByNameAttribute, Enumerate]
+partial record Point(int X, int Y);
+
 [ByIndexAttribute]
 partial record Point1(int X, int Y);
 
 [ByNameAttribute]
 partial record Point2(int X, int Y);
 
+[Enumerate]
+partial record Point3(int X, int Y);
+
 namespace Sample
 {
-    [ByIndexAttribute, ByNameAttribute]
-    partial record Point3(int X, int Y);
+    [ByIndexAttribute, ByNameAttribute, Enumerate]
+    partial record Point(int X, int Y);
 
     namespace Sample
     {
