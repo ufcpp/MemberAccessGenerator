@@ -70,7 +70,7 @@ namespace MemberAccess
                 if (!string.IsNullOrEmpty(type.ContainingNamespace.Name))
                 {
                     buffer.Append(@"namespace ");
-                    buffer.Append(type.ContainingNamespace.ToDisplayString());
+                    buffer.Append(type.ContainingNamespace.Name);
                     buffer.Append(@" {
 ");
                 }
@@ -150,17 +150,6 @@ namespace MemberAccess
                 return (i, n);
             }
         }
-
-        private static string AccessibilityText(Accessibility accessibility) => accessibility switch
-        {
-            Accessibility.Public => "public",
-            Accessibility.Protected => "protected",
-            Accessibility.Private => "private",
-            Accessibility.Internal => "internal",
-            Accessibility.ProtectedOrInternal => "protected internal",
-            Accessibility.ProtectedAndInternal => "private protected",
-            _ => throw new InvalidOperationException(),
-        };
 
         public void Initialize(InitializationContext context)
         {
