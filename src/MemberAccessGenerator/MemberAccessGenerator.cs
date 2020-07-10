@@ -62,14 +62,13 @@ namespace MemberAccess
             {
                 buffer.Clear();
 
-                if (!string.IsNullOrEmpty(type.ContainingNamespace.Name))
+                foreach (var part in type.ContainingNamespace.ToDisplayParts())
                 {
-                    foreach (var c in type.ContainingNamespace.Name)
+                    if (part.Symbol is { Name: var name } && !string.IsNullOrEmpty(name))
                     {
-                        if (c == '.') buffer.Append('_');
-                        else buffer.Append(c);
+                        buffer.Append(name);
+                        buffer.Append('_');
                     }
-                    buffer.Append('_');
                 }
                 buffer.Append(type.Name);
                 buffer.Append("_memberaccess.cs");
@@ -84,7 +83,7 @@ namespace MemberAccess
                 if (!string.IsNullOrEmpty(type.ContainingNamespace.Name))
                 {
                     buffer.Append(@"namespace ");
-                    buffer.Append(type.ContainingNamespace.Name);
+                    buffer.Append(type.ContainingNamespace.ToDisplayString());
                     buffer.Append(@" {
 ");
                 }
